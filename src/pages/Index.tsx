@@ -27,15 +27,15 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* OTP Display */}
-        <OTPDisplay secret={secret} />
-
         {/* Secret Input */}
         <SecretInput 
           value={secret} 
           onChange={setSecret} 
           onClear={handleClear}
         />
+
+        {/* OTP Display */}
+        <OTPDisplay secret={secret} />
 
         {/* Info Card */}
         <div className="bg-accent/50 rounded-xl p-6 border border-accent">
