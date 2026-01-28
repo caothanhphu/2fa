@@ -16,6 +16,10 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.toUpperCase().replace(/[^A-Z2-7]/g, '');
     setInputValue(newValue);
+    // Update OTP immediately when input is valid
+    if (isValidBase32(newValue)) {
+      onChange(newValue);
+    }
   };
 
   const handleSave = () => {
