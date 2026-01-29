@@ -87,7 +87,6 @@ export function OTPDisplay({ secret }: OTPDisplayProps) {
             )}
             style={{ 
               width: `${progress}%`,
-              marginLeft: 'auto'
             }}
           />
         </div>
