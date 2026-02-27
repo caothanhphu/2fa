@@ -2,16 +2,30 @@ import { useState } from 'react';
 import { Eye, EyeOff, Key, Save, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isValidBase32 } from '@/lib/totp';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SecretInputProps {
   value: string;
   onChange: (value: string) => void;
   onClear: () => void;
+  onSaveKey?: (name: string, secret: string) => void;
 }
 
-export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
+export function SecretInput({ value, onChange, onClear, onSaveKey }: SecretInputProps) {
   const [showSecret, setShowSecret] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [keyName, setKeyName] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.toUpperCase().replace(/[^A-Z2-7]/g, '');
@@ -25,6 +39,8 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
   const handleSave = () => {
     if (inputValue && isValidBase32(inputValue)) {
       onChange(inputValue);
+      // We don't save to the sidebar here automatically anymore.
+      // Saving to the sidebar is done via the Dialog.
     }
   };
 
@@ -33,15 +49,44 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
     onClear();
   };
 
+  const handleConfirmSaveKey = () => {
+    if (onSaveKey && keyName.trim() && inputValue && isValidBase32(inputValue)) {
+      onSaveKey(keyName.trim(), inputValue);
+      setKeyName('');
+      setIsDialogOpen(false);
+    }
+  };
+
   const isValid = inputValue.length === 0 || isValidBase32(inputValue);
   const hasChanges = inputValue !== value;
-  const canSave = inputValue && isValidBase32(inputValue) && hasChanges;
+  const canSetCurrent = inputValue && isValidBase32(inputValue) && hasChanges;
+  const canSaveToList = inputValue && isValidBase32(inputValue) && keyName.trim().length > 0;
+
+  // When value prop changes from outside (e.g. loading from sidebar), update input
+  if (value !== inputValue && !hasChanges) {
+    setInputValue(value);
+  }
 
   return (
     <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
       <div className="flex items-center gap-2 mb-4">
         <Key className="w-5 h-5 text-primary" />
         <span className="text-sm font-medium text-foreground">2FA Secret Key</span>
+      </div>
+
+      {/* Name Input */}
+      <div className="mb-4">
+        <Input
+          placeholder="Account Name (e.g. Google, GitHub)"
+          value={keyName}
+          onChange={(e) => setKeyName(e.target.value)}
+          className="bg-background border-2 border-input focus-visible:ring-primary"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && canSaveToList) {
+              handleConfirmSaveKey();
+            }
+          }}
+        />
       </div>
 
       <div className="relative mb-4">
@@ -76,8 +121,8 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
 
       <div className="flex gap-2">
         <button
-          onClick={handleSave}
-          disabled={!canSave}
+          onClick={handleConfirmSaveKey}
+          disabled={!canSaveToList}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg",
             "bg-primary text-primary-foreground",
@@ -87,7 +132,7 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
           )}
         >
           <Save className="w-4 h-4" />
-          Save Key
+          Save to List
         </button>
 
         <button
@@ -100,16 +145,11 @@ export function SecretInput({ value, onChange, onClear }: SecretInputProps) {
             "hover:opacity-90 active:scale-[0.98]",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
+          title="Clear current key"
         >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-
-      {value && (
-        <p className="mt-4 text-xs text-muted-foreground text-center">
-          ✓ Key saved to browser storage
-        </p>
-      )}
     </div>
   );
 }
